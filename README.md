@@ -1,2 +1,2 @@
-# Simple-Web-Crawler
- A simple web crawler that can download whole websites to a directory.
+# Simple Web Crawler & Scraper
+ A simple web crawler that can save the html content of whole domains to a specified path.
