@@ -74,16 +74,12 @@ def save_html(url, output, fileName):
 
     if fileName is None:
         # Create a safe name for the file
-        fileName = url.split('/')[-2].replace(' ', '_') + '.html'
-
-        # Check for files with the same name
-        sameName = []
-        for root, dirs, files in os.walk(output):
-            if fileName in files:
-                sameName.append(files)
-
-        if len(sameName) > 0:
-            fileName = f"{fileName[:-5]}({len(sameName)}).html"
+        if ".html" in url:
+            # Use the original html fileName that was scraped
+            fileName = url.split('/')[-1].replace(' ', '_')
+        else:
+            # Use the second last component of the url as the fileName
+            fileName = url.split('/')[-2].replace(' ', '_') + '.html'
 
     # Save the source to the output path
     with open("{}\{}".format(output, fileName), 'wb') as file:
@@ -92,17 +88,23 @@ def save_html(url, output, fileName):
     return fileName
 
 
-def fix_links(url, directory, fileName):
+def fix_links(url, directory, fileName, index):
     # Open the html file in the specified directory
     html = open(os.path.join(directory, fileName), encoding='utf8')
     page = BeautifulSoup(html, 'lxml')
 
     for element in page.find_all('a', {"href": True}):
+        if element['href'] in index:
+            element['href'] = "index.html"
         # Find the links containing the domain
-        if url in element['href']:
+        elif url in element['href']:
             # Replace the online link with a local link
-            element['href'] = element['href'].split(
-                '/')[-2].replace(' ', '_') + '.html'
+            if ".html" in element['href']:
+                element['href'] = element['href'].split(
+                    '/')[-1].replace(' ', '_')
+            else:
+                element['href'] = element['href'].split(
+                    '/')[-2].replace(' ', '_') + '.html'
 
     # Save the html file
     with open("{}\{}".format(directory, fileName), 'wb') as file:
@@ -123,7 +125,7 @@ def main(url, output, ignore, path, fix, index):
             print(f"Saving index.html from {index}")
             fileName = save_html(index, output, "index.html")
             print("Fixing Links...")
-            fix_links(url, output, fileName)
+            fix_links(url, output, fileName, index)
 
         while to_check and max_checks:
             link = to_check.pop(0)
@@ -138,7 +140,7 @@ def main(url, output, ignore, path, fix, index):
                     fileName = save_html(link, output, None)
                     if fix:
                         print("Fixing Links...")
-                        fix_links(url, output, fileName)
+                        fix_links(url, output, fileName, index)
 
             max_checks -= 1
     except HTTPError:
